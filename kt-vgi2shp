@@ -1,0 +1,252 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+import os
+import sys
+import time
+import logging
+import datetime
+
+from katastertools.VgiShp import ui
+from katastertools.VgiShp import io
+from katastertools.VgiShp import data
+
+
+class ConsoleHandler(logging.StreamHandler):
+	"""A handler that logs to sys.stdout by default with only error (logging.ERROR and above) messages going to sys.stderr."""
+
+	def __init__(self):
+		logging.StreamHandler.__init__(self)
+		self.stream = None # reset it; we are not going to use it anyway
+
+	def emit(self, record):
+		if record.levelno >= logging.ERROR:
+			self.__emit(record, sys.stderr)
+		else:
+			self.__emit(record, sys.stdout)
+
+	def __emit(self, record, strm):
+		self.stream = strm
+		logging.StreamHandler.emit(self, record)
+
+	def flush(self):
+		# Workaround a bug in logging module
+		# See:
+		#   http://bugs.python.org/issue6333
+		if self.stream and hasattr(self.stream, 'flush') and not self.stream.closed:
+			logging.StreamHandler.flush(self)
+
+def objekt_vrstvy(meno_vrstvy, atributy):
+	if meno_vrstvy == "KLADPAR":
+		return data.KLADPAR(atributy)
+	elif meno_vrstvy == "ZAPPAR":
+		return data.ZAPPAR(atributy)
+	elif meno_vrstvy == "KATUZ":
+		return data.KATUZ(atributy)
+	elif meno_vrstvy == "LINIE":
+		return data.LINIE(atributy)
+	elif meno_vrstvy == "POPIS":
+		return data.POPIS(atributy)
+	elif meno_vrstvy == "ZNACKY":
+		return data.ZNACKY(atributy)
+	elif meno_vrstvy == "ZUOB":
+		return data.ZUOB(atributy)
+	elif meno_vrstvy == "UOV":
+		return data.UOV(atributy)
+	elif meno_vrstvy == "BPEJ":
+		return data.BPEJ(atributy)
+	else:
+		raise KeyError(meno_vrstvy)
+
+
+def main():
+	# spracuj prepinace
+	volby = ui.Volby()
+
+	logger = logging.getLogger()
+	logger.setLevel(logging.DEBUG if volby.debug else logging.INFO)
+	handler = ConsoleHandler()
+	handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+	logger.handlers = []
+	logger.addHandler(handler)
+
+	logging.info("**************** ZACIATOK KONVERZIE ***********************")
+	logging.info('CAS %s', time.strftime("%a, %d %b %Y %H:%M:%S"))
+
+	# otvor vstupny subor
+	logging.info('NAZOV SUBORU: %s', volby.subor)
+	try:
+		vstup = io.Citac(volby.subor)
+	except io.MedzeraVNazveSuboru, vstupny_subor:
+		logging.error("Vstup %s obsahuje medzeru v nazve suboru", vstupny_subor)
+		sys.exit(2)
+	except io.NieJeSubor, vstupny_subor:
+		logging.error("Vstup %s nie je subor", vstupny_subor)
+		sys.exit(2)
+	except io.ZlyTypSuboru, vstupny_subor:
+		logging.error("Vstup %s nie je vgi subor", vstupny_subor)
+		sys.exit(2)
+
+	# skontroluj vystupny adresar
+	vystupny_adresar = volby.vystupny_adresar
+	if not os.path.exists(vystupny_adresar):
+		os.makedirs(vystupny_adresar)
+	elif not os.path.isdir(vystupny_adresar):
+		logging.error("'%s' nie je platnym adresarom", vystupny_adresar)
+		sys.exit(2)
+
+	# ktore vrstvy v ktorom type nas zaujimaju
+	objects_selection = {}
+	objects_selection['KN'] = ('KATUZ', 'KLADPAR', 'LINIE', 'POPIS', 'ZAPPAR', 'ZUOB', 'ZNACKY')
+	objects_selection['UO'] = ('KATUZ', 'ZAPPAR', 'UOV', 'ZUOB')
+	objects_selection['BJ'] = ('KATUZ', 'BPEJ')
+	podporovane_objekty = []
+	for vrstvy in objects_selection.values():
+		podporovane_objekty.extend(vrstvy)
+
+	atributy = {}
+	atributy['SUBOR'] = os.path.basename(volby.subor)
+	spracuj_nezname_vrstvy = volby.spracuj_nezname_vrstvy
+
+	try:
+		# nacitaj hlavicku
+		for riadok in vstup:
+			typ = riadok[:2]
+			if typ in ('&V', '&R', '&B'):
+				logging.info(riadok[1:])
+				if typ == '&B':
+					atrib = riadok[3:].split('=')
+					atributy[atrib[0]] = atrib[1]
+
+				elif typ == '&V':
+					riadok = riadok.split(' ')
+					atributy['NAZOV'] = riadok[1]
+					atributy['TYP'] = riadok[1][0:2].upper()
+					atributy['KU'] = riadok[1][2:9]
+					atributy['redukciaY'] = riadok[4]
+					atributy['redukciaX'] = riadok[5]
+
+					if atributy.get('TYP') not in objects_selection.keys():
+						if spracuj_nezname_vrstvy:
+							logging.warn("Neznamy typ suboru %s", atributy.get('TYP'))
+						else:
+							logging.error("Neznamy typ suboru %s", atributy.get('TYP'))
+							sys.exit(2)
+
+					try:
+						if int(atributy['KU']) < 800000 or int(atributy['KU']) > 999999:
+							raise io.NeplatneKU
+					except(ValueError, io.NeplatneKU):
+						logging.error("Neplatne KU %s", atributy.get('KU'))
+			else:
+				vstup.spat(1)
+				break
+
+		# konverzia datumu z textovej hodnoty atributu AKTUAL na hodnotu pouzitelnu pre datovy typ OFTDateTime
+		try:
+			aktual = datetime.datetime.strptime(atributy.get('AKTUAL'), "%d.%m.%Y %H:%M:%S")
+			# 104=GMT+1
+			atributy['AKTUAL'] = (aktual.year, aktual.month, aktual.day, aktual.hour, aktual.minute, aktual.second, 104)
+		except:
+			atributy['AKTUAL'] = (1970, 1, 1, 0, 0, 0, 0)
+
+		# citaj subor
+		objekt = None
+		nazov_suboru = os.path.basename(volby.subor)
+		nazov_suboru = nazov_suboru.split('.')[0]
+
+		zapisovac = data.Zapisovac(nazov_suboru, vystupny_adresar, volby.format, nazvy_vrstiev=volby.vrstvy,
+				nastavenia_vrstvy=volby.nastavenia_vrstvy)
+		poc_objektov = 0
+
+		bodove_objekty = set()
+		liniove_objekty = set()
+		raw_objekty = io.Citac_objektov(vstup)
+		for raw_objekt in raw_objekty:
+			# rozhodnem sa ci objekt spracovavam alebo nie
+			objekt_id = raw_objekt['riadky'][0].split(' ')[2]
+			nazov_vrstvy = raw_objekt["meno_vrstvy"]
+
+			if nazov_vrstvy in volby.vrstvy and nazov_vrstvy in objects_selection.get(atributy.get('TYP'), ()):
+				logging.debug("Spracuvavam objekt %s %s", nazov_vrstvy, objekt_id)
+				objekt = objekt_vrstvy(nazov_vrstvy, atributy)
+				for riadok in raw_objekt["riadky"]:
+					try:
+						objekt.pridaj_riadok(riadok)
+					except data.NepodporovanaVeta:
+						logging.warn("Nespracovany riadok: %s", riadok)
+				objekt_data = objekt.data()
+
+				if objekt_data.get("pocet_uzatvoreni", 0) > 0:
+					logging.debug("Skusam otocit objekt")
+					otoceny_objekt = objekt_vrstvy(nazov_vrstvy, atributy)
+					for riadok in raw_objekty.posun_skoky():
+						otoceny_objekt.pridaj_riadok(riadok)
+					otoceny_objekt_data = otoceny_objekt.data()
+
+					if otoceny_objekt_data["pocet_uzatvoreni"] < objekt_data["pocet_uzatvoreni"]:
+						logging.debug("Vyberam otoceny objekt")
+						objekt_data = otoceny_objekt_data
+
+			elif spracuj_nezname_vrstvy and nazov_vrstvy not in podporovane_objekty:
+				logging.debug("Spracuvavam objekt %s %s", nazov_vrstvy, objekt_id)
+				if nazov_vrstvy in liniove_objekty:
+					objekt = data.INE_LINIE(atributy, nazov_vrstvy)
+				else:
+					objekt = data.INE_BODY(atributy, nazov_vrstvy)
+
+				for riadok in raw_objekt["riadky"]:
+					try:
+						objekt.pridaj_riadok(riadok)
+					except data.NepodporovanaVeta:
+						if isinstance(objekt, data.INE_LINIE):
+							logging.warn("Nespracovany riadok: %s", riadok)
+						else:
+							objekt = data.INE_LINIE(atributy, nazov_vrstvy)
+							for riadok in raw_objekt["riadky"]:
+								try:
+									objekt.pridaj_riadok(riadok)
+								except data.NepodporovanaVeta:
+									logging.warn("Nespracovany riadok: %s", riadok)
+							break
+				if isinstance(objekt, data.INE_LINIE):
+					liniove_objekty.add(nazov_vrstvy)
+				else:
+					bodove_objekty.add(nazov_vrstvy)
+				objekt_data = objekt.data()
+			else:
+				logging.debug("Vynechavam objekt %s %s\n", nazov_vrstvy, objekt_id)
+				continue
+
+			for bodovy_objekt in bodove_objekty:
+				if bodovy_objekt in liniove_objekty:
+					logging.error("Niektore bodove objekty boli ulozene ako liniove.\n")
+					sys.exit(2)
+
+			for sprava in objekt_data['spravy']:
+				logging.info(sprava)
+
+			if objekt_data.get('geometricke_objekty'):
+				logging.debug("Ukladam objekt\n")
+				zapisovac.uloz(objekt_data)
+				poc_objektov = poc_objektov + 1
+			else:
+				logging.warn("Objekt %s neobsahuje platnu geometriu, vynechavam jeho ulozenie" % objekt_id)
+
+		# vypis pocet objektov v spracovavanej vrstve VGI suboru
+		if poc_objektov > 0:
+			logging.info("POCET OBJEKTOV: %d", poc_objektov)
+		else:
+			logging.error("POCET OBJEKTOV: 0")
+
+	except io.ChybaKoncovaVeta:
+		logging.error("Chyba koncova veta")
+		sys.exit(2)
+	logging.info("***************** KONIEC KONVERZIE ************************")
+
+if __name__ == "__main__":
+	main()
+
+
+# vim: set ts=4 sts=4 sw=4 noet:

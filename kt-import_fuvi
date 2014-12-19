@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Skript pre vytvorenie davky SQL prikazov z FPU/FUVI suborov ISKN SR, vhodnych pre import do PostgreSQL.
+SQL prikazy su generovane na STDOUT (standardny vystup).
+
+Pouzitie: 	kt-import_fuvi.py <subor.fpu> > subor.sql 		- ulozenie vystupu do suboru
+		kt-import_fuvi.py <subor.fpu> | psql <nazov_databazy>	- priamy import do databazy
+
+POZNAMKA: Pred spustenim skriptu je potrebne vycistit FPU pomocou skriptu 'kt-vycisti_fuvi.py'
+"""
+
+import sys
+import re
+import os
+from datetime import datetime
+
+
+t = datetime.now()
+cas = t.strftime("%d-%m-%Y  %H:%M:%S")
+verzia = "%s.%s.%s" % __import__('katastertools').VERSION[:3]
+
+try:
+	sub = open(sys.argv[1], "r")
+except(IndexError):
+	print __doc__
+	sys.exit(2)
+
+kluce = {}
+zoznam_ku = []
+
+
+print "-- I: CAS: %s, VYTVORIL: %s, VERZIA: %s" % (cas, os.environ['USER'], verzia)
+
+print 'SET client_encoding TO UTF8;'
+print "BEGIN;"
+
+riadok = sub.readline()
+while riadok:
+		if re.match("^\.", riadok):
+			prem =  riadok.strip(".").split()[0]
+			
+			try:
+				hodn_prem = riadok.strip(".").split()[1]
+			except:
+				hodn_prem = ""
+
+			kluce[prem] = hodn_prem
+
+			#pridanie konvertovaneho KU do zoznamu
+			if prem == 'KATASTRALNE_UZEMIE':
+				zoznam_ku.append(hodn_prem)
+
+		elif re.match("^$", riadok):
+			pass
+		else:
+			#ziskanie cisla KU
+			sql_ku = kluce['KATASTRALNE_UZEMIE']
+
+			#ziskavanie nazvov stlpcov
+			pol = kluce['POLOZKY'].split(";")
+			pol2 = '\"' + '\",\"'.join(pol)
+			sql_stlpce = "\"ku\"," + pol2.replace("KN-","")[:-2].lower()
+
+			#ziskanie nazvu db tabulky
+			sql_tab = kluce['SKUPINA'].replace("KN-","").lower()
+
+			#ziskanie hodnot
+			kn_hodn = riadok.split(";")
+			sql_hodn = "$$%s$$, $$%s" % (sql_ku, '$$, $$'.join(kn_hodn)[:-5])
+
+			#vytvorenie SQL prikazu
+			print "INSERT INTO kn_%s (%s) VALUES (%s);" % (sql_tab, sql_stlpce, sql_hodn)
+
+		riadok = sub.readline()
+
+# vytvorenie jedinecneho identifikatora parcely - parckey
+for u in zoznam_ku:
+	print "UPDATE kn_cs SET parckey = ku::text || '00' || to_char(cpa, 'FM000000000') WHERE ku = '%s';" % u
+	print "UPDATE kn_ep SET parckey = ku::text || to_char(cpu, 'FM00') || to_char(cpa, 'FM000000000') WHERE ku = '%s';" % u
+	print "UPDATE kn_pa SET parckey = ku::text || '00' || to_char(cpa, 'FM000000000') WHERE ku = '%s';" % u
+
+print "END;"
+
+
+# vim: set ts=4 sts=4 sw=4 noet:

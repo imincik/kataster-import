@@ -1,0 +1,14 @@
+*~
+*.db
+*.old
+*.bak
+*.tmp
+*.pyc
+*.vgi
+*.VGI
+*.shp
+*.dbf
+*.shx
+tmp
+MANIFEST
+dist

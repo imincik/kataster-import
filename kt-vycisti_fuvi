@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Pomocny skript pre vycistenie zaznamov v subore *.FPU. Vykona prekodovanie do UTF8, odstranenie neplatnych znakov,
+spojenie zaznamov nachadzajucich sa na viacerych riadkoch Vysledny subor je generovany na STDOUT (standardny vystup).
+
+Pouzitie: kt-vycisti_fuvi.py subor.fpu [kodovanie] > opraveny_subor.fpu
+"""
+
+import re
+import sys
+import codecs
+
+
+uplnost_riadku = True
+spajac_zaznamov = []
+
+def neplatnost_znakov(znak):
+	ordznak = ord(znak)
+	if ordznak < 31 or (ordznak >= 127 and ordznak <= 159): return False
+	
+	try:
+		znak.encode('latin2')
+	except:
+		return False
+	return True
+
+
+# nazov suboru
+try:
+	fpusubor = sys.argv[1]
+except(IndexError):
+	print __doc__
+	sys.exit(2)
+
+# kodovanie
+try:
+	kodovanie = sys.argv[2]
+except(IndexError):
+	kodovanie = 'IBM852' # CP1250
+
+sub = codecs.open(fpusubor, "r", encoding=kodovanie)
+
+riadok = sub.readline()
+reg1 = re.compile("^\.")
+reg2 = re.compile("^$")
+reg3 = re.compile(";$")
+while riadok:
+	riadok = filter(neplatnost_znakov, riadok.rstrip())
+	if reg1.match(riadok):
+		print riadok.rstrip().encode('utf-8')
+
+	elif reg2.match(riadok):
+		print riadok.rstrip().encode('utf-8')
+
+	else:
+		if reg3.search(riadok) and uplnost_riadku == True:
+			print riadok.rstrip().encode('utf-8')
+
+		elif reg3.search(riadok) and uplnost_riadku == False:
+			spojeny_zaznam = ''.join(spajac_zaznamov)
+			print spojeny_zaznam.rstrip().encode('utf-8') + riadok.rstrip().encode('utf-8')
+			uplnost_riadku = True
+			spajac_zaznamov = []
+		else:
+			spajac_zaznamov.append(riadok.rstrip())
+			uplnost_riadku = False
+
+	riadok = sub.readline()
+
+
+# vim: set ts=4 sts=4 sw=4 noet:

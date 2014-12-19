@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Skript pre vytvorenie SQL prikazov pre vytvorenie databazy pre data Katastra.
+Vysledny SQL skript je generovany na STDOUT (standardny vystup). Cielova
+databaza musi obsahovat instalaciu PostGISu.
+
+Pouzitie:
+	$ createdb -T template_postgis <nazov_databazy>
+	$ kt-vytvor_db | psql <nazov_databazy>
+"""
+
+import os
+from katastertools import VgiShp
+
+sql_subory = [
+	'popisne-data.sql',
+	'graficke-data.sql',
+]
+
+# vytvorenie schem
+print 'CREATE SCHEMA kataster;'
+print 'SET search_path TO kataster,public;'
+
+# vytvorenie tabuliek
+for sql_subor in sql_subory:
+	subor = open(os.path.join(os.path.dirname(VgiShp.__path__[0]), 'sql', sql_subor), 'r')
+	print subor.read()
+
+print 'VACUUM ANALYZE;'
+
+
+# vim: set ts=4 sts=4 sw=4 noet:

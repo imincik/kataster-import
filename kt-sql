@@ -1,0 +1,116 @@
+#!/bin/bash
+
+set -e
+
+if [ $# -ne 1 ]; then
+	echo
+	echo "Vykona konverziu dat Katastra do SQL, ESRI Shapefile a Microstation DGN 7."
+	echo "Pouzitie: `basename $0` <kataster_dir>"
+	echo
+	echo "Struktura adresara <kataster_dir>:"
+	echo " * adresar 'vgi'             - subory VGI"
+	echo " * adresar 'dbf' alebo 'fpu' - subory DBF resp. FPU+FPT"
+	echo "V pripade, ze existuje adresar 'dbf' aj 'fpu', na konverziu sa pouziju data vo formate FPU."
+	echo
+    exit
+fi
+
+
+ROOT_DIR="$(readlink -e $1)"
+echo;
+echo "* Vstupny adresar: $ROOT_DIR"
+echo;
+
+test ! -d "$ROOT_DIR/vgi" && { echo "ERROR: Adresar '$ROOT_DIR/vgi' neexistuje. Koncim."; echo; exit 1; }
+test ! -d "$ROOT_DIR/fpu" && test ! -d "$ROOT_DIR/dbf" && { echo "ERROR: Adresar '$ROOT_DIR/fpu' ani '$ROOT_DIR/dbf' neexistuje. Koncim."; echo; exit 1; }
+
+
+echo "* Cistenie vystupnych adresarov ..."
+echo;
+
+# vycistenie adresarov sql
+vystupne_adresare=(sql sql_p sql_g shp dgn log)
+
+for adr in "${vystupne_adresare[@]}"; do
+	rm -rf $ROOT_DIR/$adr
+	mkdir -p $ROOT_DIR/$adr
+done
+
+
+cd "$ROOT_DIR"
+
+# ak existuje adresar 'fpu', pouzijeme ho na konverziu, inac pouzijeme adresar 'dbf'
+if [[ -d fpu && "$(ls -A fpu)" ]]; then
+
+	#
+	### FPU ###
+	#
+	echo "* Konverzia FPU do SQL ..."
+	for file in $(find "$ROOT_DIR/fpu" -iname "*.FPU"); do
+		fpuc=$(sed 's/\.FPU$/\.fpuc/I' <<< $file)
+	
+		echo "* Cistenie FPU ($file) ..."
+		kt-vycisti_fuvi $file IBM852 > $fpuc || (echo "I: Opakujem cistenie s kodovanim 'CP1250'"; kt-vycisti_fuvi $file CP1250 > $fpuc)
+	
+		echo "* Konverzia FPU do SQL ($file) ..."
+		kt-import_fuvi $fpuc > $ROOT_DIR/sql_p/$(basename $file).sql
+	done;
+
+else
+
+	#
+	### DBF ###
+	#
+	echo "* Konverzia DBF do SQL ..."
+	for file in $(find "$ROOT_DIR/dbf" -iname "*.DBF"); do
+		echo "* Konverzia DBF do SQL ($file) ..."
+		kt-import_dbf2 $file > $ROOT_DIR/sql_p/$(basename $file).sql
+	done;
+fi
+
+echo "* Spajanie SQL suborov popisnych dat ..."
+find $ROOT_DIR/sql_p -type f -iname *.sql -exec cat "{}" >> sql/popisne_udaje.sql \;
+echo;
+
+
+#
+### VGI ###
+#
+# KN
+echo "* Konverzia KN do SQL (KATUZ, KLADPAR, LINIE, POPIS, ZAPPAR, ZNACKY, ZUOB) ..."
+find vgi -iname "KN*.vgi" -exec kt-vgi2shp -f sql-copy -t -k -l -p -r -n -z -o sql_g "{}" \; &> log/vgi-kn-sql.log
+
+echo "* Konverzia KN do SHP (vsetky najdene vrstvy)..."
+find vgi -iname "KN*.vgi" -exec kt-vgi2shp -f shp -o shp "{}" \; &> log/vgi-kn-shp.log
+
+echo "* Konverzia KN do DGN (vsetky najdene vrstvy)..."
+find vgi -iname "KN*.vgi" -exec kt-vgi2shp -f dgn -o dgn "{}" \; &> log/vgi-kn-dgn.log
+
+
+# UO
+echo "* Konverzia UO do SQL (UOV)..."
+find vgi -iname "UO*.vgi" -exec kt-vgi2shp -f sql-copy -u -o sql_g "{}" \; &> log/vgi-uo-sql.log
+
+echo "* Konverzia UO do SHP (vsetky najdene vrstvy)..."
+find vgi -iname "UO*.vgi" -exec kt-vgi2shp -f shp -o shp "{}" \; &> log/vgi-uo-shp.log
+
+echo "* Konverzia UO do DGN (vsetky najdene vrstvy)..."
+find vgi -iname "UO*.vgi" -exec kt-vgi2shp -f dgn -o dgn "{}" \; &> log/vgi-uo-dgn.log
+
+
+echo "* Spajanie SQL suborov grafickych dat ..."
+find $ROOT_DIR/sql_g -type f -iname *.sql -exec cat "{}" >> sql/graficke_udaje.sql \;
+echo;
+
+
+# logy
+echo "* Chybove hlasenia:"
+grep -vH "^INFO\|^$" $ROOT_DIR/log/*.log || true
+echo;
+
+
+# koniec
+echo "* Koniec konverzie"
+
+
+# vim: set ts=4 sts=4 sw=4 noet:
