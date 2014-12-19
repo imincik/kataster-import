@@ -143,7 +143,6 @@ class Objekt(object):
 			'meta': self.meta,
 			'atributy': atributy,
 			'geometricke_objekty': self.geometricke_objekty(),
-			'textove_elementy': self.textove_elementy,
 			'spravy': self.spravy
 		}
 
@@ -505,7 +504,7 @@ class Vystup_vrstvy(object):
 			f.SetGeometryDirectly(geom)
 			yield f
 
-	def uloz(self, objekt, data):
+	def uloz(self, data):
 		if not self.polia:
 			self.priprav_polia(data['meta']['polia'])
 		for feature in self.features(data):
@@ -514,30 +513,39 @@ class Vystup_vrstvy(object):
 
 
 class CAD_vystup(object):
+	TEXTOVY_ATRIBUT_VRSTVY = {
+		'BPEJ': 'bj',
+		'KATUZ': 'ku_nazov',
+		'KLADPAR': 'parcela',
+		'UOV': 'parcela',
+		'POPIS': 'text',
+		'INE_BODY': 'text'
+	}
+
 	def __init__(self, vystup):
 		self.vystup = vystup
 
 	def uloz(self, data):
-		# Ak objekt obsahuje textove elementy (vety), potom sa pre kazdy element vytvori bodovy objekt na danej
-		# pozicii s hodnotou textu ulozenou v atribute 'Text'. Vsetky povodne atributy sa zmazu, resp. neulozia.
+		textovy_atribut = self.TEXTOVY_ATRIBUT_VRSTVY.get(data['meta'].get('meno_objektu'))
+		textove_hodnoty = []
+		for objekt in data['geometricke_objekty']:
+			text = objekt.get('atributy', {}).get(textovy_atribut, data['atributy'].get(textovy_atribut, ''))
+			textove_hodnoty.append('%s' % text)
+			objekt['atributy'] = {}
+		# Zmazu sa vsetky atributy objektu, ulozi sa iba 'Text' atribut do samostatneho
+		# bodoveho objektu vytvoreneho v strede povodneho objektu
 		data['atributy'] = {}
 		data['meta']['polia'] = []
-		for geom_objekt in data['geometricke_objekty']:
-			geom_objekt['atributy'] = {}
 
-		for f in self.vystup.features(data):
+		for f, text in zip(self.vystup.features(data), textove_hodnoty):
 			f.SetStyleString('PEN(c:#FF0000)')
 			self.vystup.vrstva.CreateFeature(f)
+
+			f.SetGeometry(f.GetGeometryRef().Centroid())
+			f.SetField('Text', text.encode(self.vystup.kodovanie))
+			f.SetStyleString('LABEL(f:"Times New Roman",s:10pt)')
+			self.vystup.vrstva.CreateFeature(f)
 			f.Destroy()
-		if data['textove_elementy']:
-			for text_element in data['textove_elementy']:
-				f = ogr.Feature(feature_def=self.vystup.vrstva.GetLayerDefn())
-				geom = ogr.CreateGeometryFromWkt(text_element['wkt'])
-				f.SetGeometry(geom)
-				f.SetField('Text', text_element['text'].encode(self.vystup.kodovanie))
-				f.SetStyleString('LABEL(f:"Times New Roman",s:10pt)')
-				self.vystup.vrstva.CreateFeature(f)
-				f.Destroy()
 
 
 class Zapisovac:
