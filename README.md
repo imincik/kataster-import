@@ -68,173 +68,173 @@ objektov Katastra.
 
 ## Vrstvy
 ### KLADPAR
-Hranice a čísla parciel registra C, symboly druhov pozemkov
+Hranice a cisla parciel registra C, symboly druhov pozemkov
 
-názov vrstvy: kn_kladpar
+nazov vrstvy: kn_kladpar
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
+ * ku (integer)         - cislo katastralneho uzemia
  * parckey (string)     - jedinecny identifikator parcely
- * parcela (string)     - lomené číslo parcely
- * kmen (integer)       - kmenové číslo parcely
+ * parcela (string)     - lomene cislo parcely
+ * kmen (integer)       - kmenove cislo parcely
  * podlomenie (integer) - podlomenie parcely
- * t (string)           - umiestnenia čísiel parciel v tvare Y;X;H;U|X;Y;H;U|..., kde:
-                          * Y a X sú súradnice referenčného bodu textu
-                          * H je výška písma v mm pre mierku uvedenú vo vete rozsahu výkresu
-                          * U je uhol stočenia textu
+ * t (string)           - umiestnenia cisiel parciel v tvare Y;X;H;U|X;Y;H;U|..., kde:
+                          * Y a X su suradnice referencneho bodu textu
+                          * H je vyska pisma v mm pre mierku uvedenu vo vete rozsahu vykresu
+                          * U je uhol stocenia textu
  * g_s (string)         - umiestnenie symbolov spolu s ich atributmi v tvare Y;X;S;U;M|X;Y;S;U;M|..., kde:
-                          * Y a X sú súradnice symbolu
-                          * S je kód symbolu
-                          * U je uhol stočenia symbolu
-                          * M je mierka zmenšenia symbolu
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+                          * Y a X su suradnice symbolu
+                          * S je kod symbolu
+                          * U je uhol stocenia symbolu
+                          * M je mierka zmensenia symbolu
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (MULTIPOLYGON)
 
 
 ### UOV
-Hranice a čísla parciel registra E
+Hranice a cisla parciel registra E
 
-názov vrstvy: kn_uov
+nazov vrstvy: kn_uov
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
  * parckey (string)     - jedinecny identifikator parcely
- * ku (integer)         - číslo katastrálneho územia
- * parcela (string)     - lomené číslo parcely
- * kmen (integer)       - kmenové číslo parcely
+ * ku (integer)         - cislo katastralneho uzemia
+ * parcela (string)     - lomene cislo parcely
+ * kmen (integer)       - kmenove cislo parcely
  * podlomenie (integer) - podlomenie parcely
- * t (string)           - umiestnenia čísiel parciel v tvare Y;X;H;U|X;Y;H;U|..., kde:
-                          * Y a X sú súradnice referenčného bodu textu
-                          * H je výška písma textu v mm pre mierku uvedenú vo vete rozsahu výkresu
-                          * U je uhol stočenia textu
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * t (string)           - umiestnenia cisiel parciel v tvare Y;X;H;U|X;Y;H;U|..., kde:
+                          * Y a X su suradnice referencneho bodu textu
+                          * H je vyska pisma textu v mm pre mierku uvedenu vo vete rozsahu vykresu
+                          * U je uhol stocenia textu
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (MULTIPOLYGON)
 
 
 ### ZAPPAR
-Hranica druhov pozemkov, ktoré nie sú v KLADPAR
+Hranica druhov pozemkov, ktore nie su v KLADPAR
 
-názov vrstvy: kn_zappar
+nazov vrstvy: kn_zappar
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
- * g_k (integer)        - kresliaci kľúč línie. Linie musia mať K uvedenú na prvom bode. Všetky následujúce spojenia preberajú
-                          túto hodnotu atribútu. Pokiaľ je na bode uvedená nová hodnota atribútu K, je potrebné líniu
-                          na tomto bode ukončit a začať ďalšiu líniu s novou hodnotou K.
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * ku (integer)         - cislo katastralneho uzemia
+ * g_k (integer)        - kresliaci kluc linie. Linie musia mat K uvedenu na prvom bode. Vsetky nasledujuce spojenia preberaju
+                          tuto hodnotu atributu. Pokial je na bode uvedena nova hodnota atributu K, je potrebne liniu
+                          na tomto bode ukoncit a zacat dalsiu liniu s novou hodnotou K.
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (LINESTRING)
 
 
 ### KATUZ
-Hranica katastrálneho územia
+Hranica katastralneho uzemia
 
-názov vrstvy: kn_katuz
+nazov vrstvy: kn_katuz
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
- * ku_cislo (integer)   - číslo katastrálneho územia KU
- * ku_nazov (string)    - názov susedného kat. územia HKU
- * g_k (integer)        - kresliaci kľúč línie. Linie musia mať K uvedenú na prvom bode. Všetky následujúce spojenia preberajú
-                          túto hodnotu atribútu. Pokiaľ je na bode uvedená nová hodnota atribútu K, je potrebné líniu
-                          na tomto bode ukončit a začať ďalšiu líniu s novou hodnotou K.
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * ku (integer)         - cislo katastralneho uzemia
+ * ku_cislo (integer)   - cislo katastralneho uzemia KU
+ * ku_nazov (string)    - nazov susedneho kat. uzemia HKU
+ * g_k (integer)        - kresliaci kluc linie. Linie musia mat K uvedenu na prvom bode. Vsetky nasledujuce spojenia preberaju
+                          tuto hodnotu atributu. Pokial je na bode uvedena nova hodnota atributu K, je potrebne liniu
+                          na tomto bode ukoncit a zacat dalsiu liniu s novou hodnotou K.
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (LINESTRING)
 
 
 ### LINIE
-Ďalšie prvky polohopisu (inžinierske siete, hranica CHKO ...)
+Dalsie prvky polohopisu (inzinierske siete, hranica CHKO ...)
 
-názov vrstvy: kn_linie
+nazov vrstvy: kn_linie
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
- * g_k (integer)        - kresliaci kľúč línie. Linie musia mať K uvedenú na prvom bode. Všetky následujúce spojenia preberajú
-                          túto hodnotu atribútu. Pokiaľ je na bode uvedená nová hodnota atribútu K, je potrebné líniu
-                          na tomto bode ukončit a začať ďalšiu líniu s novou hodnotou K.
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * ku (integer)         - cislo katastralneho uzemia
+ * g_k (integer)        - kresliaci kluc linie. Linie musia mat K uvedenu na prvom bode. Vsetky nasledujuce spojenia preberaju
+                          tuto hodnotu atributu. Pokial je na bode uvedena nova hodnota atributu K, je potrebne liniu
+                          na tomto bode ukoncit a zacat dalsiu liniu s novou hodnotou K.
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (LINESTRING)
 
 
 ### ZNACKY
-Mapové značky okrem značiek druhov pozemkov
+Mapove znacky okrem znaciek druhov pozemkov
 
-názov vrstvy: kn_znacky
+nazov vrstvy: kn_znacky
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
- * g_s (integer)        - kód značky (hodnota atributu S vo VGI)
- * g_u (real)           - uhol stočenia značky
- * g_m (real)           - mierka zmenšenia značky
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * ku (integer)         - cislo katastralneho uzemia
+ * g_s (integer)        - kod znacky (hodnota atributu S vo VGI)
+ * g_u (real)           - uhol stocenia znacky
+ * g_m (real)           - mierka zmensenia znacky
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (POINT)
 
 
 ### POPIS
-Sídelné a nesídelné názvy
+Sidelne a nesidelne nazvy
 
-názov vrstvy: kn_popisy
+nazov vrstvy: kn_popisy
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
+ * ku (integer)         - cislo katastralneho uzemia
  * text (string)        - text
- * g_k (integer)        - kresliaci kľúč textu
- * g_u (real)           - uhol stočenia textu
- * g_h (real)           - výška písma textu v mm pre mierku uvedenú vo vete rozsahu výkresu
+ * g_k (integer)        - kresliaci kluc textu
+ * g_u (real)           - uhol stocenia textu
+ * g_h (real)           - vyska pisma textu v mm pre mierku uvedenu vo vete rozsahu vykresu
  * g_f (integer)        - typ fontu
- * g_d (integer)        - vzťažný bod textu
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * g_d (integer)        - vztazny bod textu
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (POINT)
 
 
 ### ZUOB
-Hranica zastavaného územia obce
+Hranica zastavaneho uzemia obce
 
-názov vrstvy: kn_zuob
+nazov vrstvy: kn_zuob
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * ku (integer)         - cislo katastralneho uzemia
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (MULTIPOLYGON)
 
 
 ### BPEJ
-Hranice areálov bonitovaných pôdno-ekologických jednotiek
+Hranice arealov bonitovanych podno-ekologickych jednotiek
 
-názov vrstvy: kn_bpej
+nazov vrstvy: kn_bpej
 
 atributy:
  * o_id (integer)       - ID objektu vo VGI subore
- * ku (integer)         - číslo katastrálneho územia
- * bj (string)          - bonitná jednotka
- * stav_k (timestamp with timezone) - dátum a čas aktuálnosti údajov
- * subor (string)       - názov súboru
+ * ku (integer)         - cislo katastralneho uzemia
+ * bj (string)          - bonitna jednotka
+ * stav_k (timestamp with timezone) - datum a cas aktualnosti udajov
+ * subor (string)       - nazov suboru
  * geom (MULTIPOLYGON)
 
 
 ## parckey
 format: KKKKKKCCAAAAABBBD
- * KKKKKK               - kód katastrálneho územia
- * CC                   - u parcel registra C vyplňujeme 00 (CPU nie je zadané)
- * AAAAA                - kmeňové číslo parcely
+ * KKKKKK               - kod katastralneho uzemia
+ * CC                   - cislo povodneho uzemia (u parciel registra C vzdy 00)
+ * AAAAA                - kmenove cislo parcely
  * BBB                  - podlomenie parcely
- * D                    -  diel parcely
+ * D                    - diel parcely
 
-číslo s nižším počtom cifier je zľava doplnené nulami
+cislo s nizsim poctom cifier je zlava doplnene nulami
 
 
 # Popisne udaje
