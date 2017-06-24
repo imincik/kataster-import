@@ -161,6 +161,10 @@ BEGIN;
 		pvz integer,
 		pep smallint,
 		ppl smallint,
+--SM, 21.06.2017, podla kat. udajov z 28.04.2017 >
+                slv character varying(10),
+		dst smallint,
+--SM, 21.06.2017 <
 		crc integer,
 		naz_suboru character varying(20)
 	);
@@ -316,6 +320,9 @@ BEGIN;
 		pvz integer,
 		kpv smallint,
 		ico bigint,
+--SM, 21.06.2017, podla kat. udajov z 28.04.2017 >
+                pcz bigint,
+--SM, 21.06.2017 <
 		sta integer,
 		rci bigint,
 		stb integer,
